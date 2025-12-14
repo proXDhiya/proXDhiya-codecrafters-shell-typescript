@@ -1,12 +1,17 @@
-import { createInterface } from "readline";
+import { createInterface } from "node:readline";
 
 const rl = createInterface({
   input: process.stdin,
   output: process.stdout,
+  terminal: true
 });
 
-// TODO: Uncomment the code below to pass the first stage
- rl.question("$ ", (answer) => {
-   console.error(`${answer}: command not found`);
-   rl.close();
- });
+rl.setPrompt("$ ");
+rl.prompt();
+
+rl.on("line", (line) => {
+  const command = line.trim();
+  if (command)
+    console.error(`${command}: command not found`);
+  rl.prompt();
+});
