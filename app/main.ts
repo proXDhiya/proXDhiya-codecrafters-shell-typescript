@@ -11,7 +11,12 @@ rl.prompt();
 
 rl.on("line", (line) => {
   const command = line.trim();
-  if (command)
+  if (command) {
+    if (command.toLowerCase() === 'exit') {
+      rl.close();
+      process.exit(0);
+    }
     console.error(`${command}: command not found`);
+  }
   rl.prompt();
 });
