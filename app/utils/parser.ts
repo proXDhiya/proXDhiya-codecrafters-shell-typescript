@@ -3,6 +3,7 @@ export function parseCommand(input: string): { command: string; args: string[] }
   let current = "";
   let tokenStarted = false;
   let inSingleQuote = false;
+  let inDoubleQuote = false;
 
   for (let i = 0; i < input.length; i++) {
     const ch = input[i];
@@ -17,8 +18,24 @@ export function parseCommand(input: string): { command: string; args: string[] }
       continue;
     }
 
+    if (inDoubleQuote) {
+      if (ch === '"') {
+        inDoubleQuote = false;
+      } else {
+        current += ch;
+        tokenStarted = true;
+      }
+      continue;
+    }
+
     if (ch === "'") {
       inSingleQuote = true;
+      tokenStarted = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      inDoubleQuote = true;
       tokenStarted = true;
       continue;
     }
