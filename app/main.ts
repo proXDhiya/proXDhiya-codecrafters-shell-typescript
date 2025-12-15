@@ -1,4 +1,4 @@
-import { addHistoryLine, getHistoryLines, initHistory } from "./registry/history";
+import { addHistoryLine, getPersistentHistoryLines, initHistory } from "./registry/history";
 import { createInterface, Interface } from "node:readline";
 import { initPath, resolveCommand } from "./utils/path";
 import { runParsedCommand } from "./utils/executor";
@@ -16,7 +16,7 @@ initPath();
 initHistory();
 
 const rlWithHistory = rl as Interface & { history: string[] }
-rlWithHistory.history = [...getHistoryLines()].reverse();
+rlWithHistory.history = [...getPersistentHistoryLines()].reverse();
 
 rl.setPrompt("$ ");
 rl.prompt();

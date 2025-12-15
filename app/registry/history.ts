@@ -2,10 +2,12 @@ import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const historyFilePath = resolve(process.cwd(), ".shell_history");
-const history: string[] = [];
+const persistentHistory: string[] = [];
+const sessionHistory: string[] = [];
 
 export function initHistory(): void {
-  history.length = 0;
+  persistentHistory.length = 0;
+  sessionHistory.length = 0;
 
   if (!existsSync(historyFilePath)) {
     return;
@@ -13,14 +15,19 @@ export function initHistory(): void {
 
   const content = readFileSync(historyFilePath, "utf8");
   const lines = content.split("\n").filter((line) => line.length > 0);
-  history.push(...lines);
+  persistentHistory.push(...lines);
 }
 
 export function addHistoryLine(line: string): void {
-  history.push(line);
+  sessionHistory.push(line);
+  persistentHistory.push(line);
   appendFileSync(historyFilePath, `${line}\n`, "utf8");
 }
 
 export function getHistoryLines(): readonly string[] {
-  return history;
+  return sessionHistory;
+}
+
+export function getPersistentHistoryLines(): readonly string[] {
+  return persistentHistory;
 }
