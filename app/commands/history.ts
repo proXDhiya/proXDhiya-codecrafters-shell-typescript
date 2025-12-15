@@ -1,7 +1,9 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 
 import { appendHistoryLines, getHistoryLines } from "../registry/history";
 import type { CommandHandler } from "../utils/types";
+
+const lastAppendedIndexByPath = new Map<string, number>();
 
 export const historyCommand: CommandHandler = (args: string[]): void => {
   const flag = args[0];
@@ -33,6 +35,30 @@ export const historyCommand: CommandHandler = (args: string[]): void => {
     } catch (error) {
       process.stderr.write(`history: ${String(error)}\n`);
     }
+    return;
+  }
+
+  if (flag === "-a") {
+    if (path === undefined) {
+      process.stderr.write("history: -a: missing path\n");
+      return;
+    }
+
+    const targetPath = path;
+    const linesToAppendFrom = lastAppendedIndexByPath.get(targetPath) ?? 0;
+    const allLines = getHistoryLines();
+    const newLines = allLines.slice(linesToAppendFrom);
+
+    if (newLines.length > 0) {
+      try {
+        appendFileSync(targetPath, `${newLines.join("\n")}\n`, "utf8");
+      } catch (error) {
+        process.stderr.write(`history: ${String(error)}\n`);
+        return;
+      }
+    }
+
+    lastAppendedIndexByPath.set(targetPath, allLines.length);
     return;
   }
 
