@@ -19,12 +19,39 @@ export function parseCommand(input: string): { command: string; args: string[] }
     }
 
     if (inDoubleQuote) {
+      if (ch === "\\") {
+        if (i + 1 < input.length) {
+          const next = input[i + 1];
+          current += next;
+          tokenStarted = true;
+          i++;
+        } else {
+          current += "\\";
+          tokenStarted = true;
+        }
+        continue;
+      }
+
       if (ch === '"') {
         inDoubleQuote = false;
       } else {
         current += ch;
         tokenStarted = true;
       }
+      continue;
+    }
+
+    if (ch === "\\") {
+      if (i + 1 >= input.length) {
+        current += "\\";
+        tokenStarted = true;
+        continue;
+      }
+
+      const next = input[i + 1];
+      current += next;
+      tokenStarted = true;
+      i++;
       continue;
     }
 
