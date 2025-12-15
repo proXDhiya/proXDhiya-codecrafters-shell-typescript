@@ -11,15 +11,15 @@ export const typeCommand: CommandHandler = async (args: string[]): Promise<void>
   const command = args[0];
   
   if (commands.has(command)) {
-    console.log(`${command} is a shell builtin`);
+    process.stdout.write(`${command} is a shell builtin\n`);
     return;
   }
 
   const resolved = await resolveCommand(command);
   if (resolved) {
-    console.log(`${command} is ${resolved}`);
+    process.stdout.write(`${command} is ${resolved}\n`);
     return;
   }
 
-  console.log(`${command}: not found`);
+  process.stdout.write(`${command}: not found\n`);
 };
