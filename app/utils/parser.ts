@@ -22,9 +22,14 @@ export function parseCommand(input: string): { command: string; args: string[] }
       if (ch === "\\") {
         if (i + 1 < input.length) {
           const next = input[i + 1];
-          current += next;
-          tokenStarted = true;
-          i++;
+          if (next === "\\" || next === '"') {
+            current += next;
+            tokenStarted = true;
+            i++;
+          } else {
+            current += "\\";
+            tokenStarted = true;
+          }
         } else {
           current += "\\";
           tokenStarted = true;
