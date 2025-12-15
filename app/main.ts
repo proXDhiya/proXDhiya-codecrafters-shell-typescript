@@ -1,6 +1,6 @@
 import { createInterface, Interface } from "node:readline";
-import { commands } from "./commands/index";
 import { parseCommand } from "./utils/parser";
+import commands from "./commands/index";
 
 const rl: Interface = createInterface({
   input: process.stdin,
