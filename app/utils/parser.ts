@@ -1,4 +1,4 @@
-import type { ParsedCommand, RedirectTarget } from "./types";
+import type { ParsedCommand, Redirect } from "./types";
 
 export function parseCommand(input: string): ParsedCommand {
   const tokenHasQuotedOrEscapedChar: boolean[] = [];
@@ -106,18 +106,36 @@ export function parseCommand(input: string): ParsedCommand {
 
   const command = tokens[0] ?? "";
 
-  let stdoutRedirect: RedirectTarget = null;
-  let stderrRedirect: RedirectTarget = null;
+  let stdoutRedirect: Redirect = null;
+  let stderrRedirect: Redirect = null;
   const args: string[] = [];
 
   for (let i = 1; i < tokens.length; i++) {
     const tok = tokens[i];
     const tokHasQuotedOrEscaped = tokenHasQuotedOrEscapedChar[i] ?? false;
 
+    if (!tokHasQuotedOrEscaped && (tok === ">>" || tok === "1>>")) {
+      const file = tokens[i + 1];
+      if (file !== undefined) {
+        stdoutRedirect = { target: file, mode: "append" };
+        i++;
+      }
+      continue;
+    }
+
+    if (!tokHasQuotedOrEscaped && tok === "2>>") {
+      const file = tokens[i + 1];
+      if (file !== undefined) {
+        stderrRedirect = { target: file, mode: "append" };
+        i++;
+      }
+      continue;
+    }
+
     if (!tokHasQuotedOrEscaped && (tok === ">" || tok === "1>")) {
       const file = tokens[i + 1];
       if (file !== undefined) {
-        stdoutRedirect = file;
+        stdoutRedirect = { target: file, mode: "overwrite" };
         i++;
       }
       continue;
@@ -126,24 +144,39 @@ export function parseCommand(input: string): ParsedCommand {
     if (!tokHasQuotedOrEscaped && tok === "2>") {
       const file = tokens[i + 1];
       if (file !== undefined) {
-        stderrRedirect = file;
+        stderrRedirect = { target: file, mode: "overwrite" };
         i++;
       }
       continue;
     }
 
+    if (!tokHasQuotedOrEscaped && tok.startsWith("1>>") && tok.length > 3) {
+      stdoutRedirect = { target: tok.slice(3), mode: "append" };
+      continue;
+    }
+
+    if (!tokHasQuotedOrEscaped && tok.startsWith(">>") && tok.length > 2) {
+      stdoutRedirect = { target: tok.slice(2), mode: "append" };
+      continue;
+    }
+
+    if (!tokHasQuotedOrEscaped && tok.startsWith("2>>") && tok.length > 3) {
+      stderrRedirect = { target: tok.slice(3), mode: "append" };
+      continue;
+    }
+
     if (!tokHasQuotedOrEscaped && tok.startsWith("1>") && tok.length > 2) {
-      stdoutRedirect = tok.slice(2);
+      stdoutRedirect = { target: tok.slice(2), mode: "overwrite" };
       continue;
     }
 
     if (!tokHasQuotedOrEscaped && tok.startsWith("2>") && tok.length > 2) {
-      stderrRedirect = tok.slice(2);
+      stderrRedirect = { target: tok.slice(2), mode: "overwrite" };
       continue;
     }
 
     if (!tokHasQuotedOrEscaped && tok.startsWith(">") && tok.length > 1) {
-      stdoutRedirect = tok.slice(1);
+      stdoutRedirect = { target: tok.slice(1), mode: "overwrite" };
       continue;
     }
 

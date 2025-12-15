@@ -1,26 +1,29 @@
 import { spawn } from "node:child_process";
 import { closeSync, openSync, writeSync } from "node:fs";
 
-import type { CommandHandler, ParsedCommand, RedirectTarget } from "./types";
+import type { CommandHandler, ParsedCommand, Redirect, Redirects } from "./types";
 
 type RunParsedCommandOptions = {
   builtins: Map<string, CommandHandler>;
   resolveExternal: (command: string) => Promise<string | null>;
 };
 
+function openRedirectFd(redirect: Redirect): number | undefined {
+  if (redirect === null) return undefined;
+  const flags = redirect.mode === "append" ? "a" : "w";
+  return openSync(redirect.target, flags);
+}
+
 function withRedirects(
-  redirects: { stdout: RedirectTarget; stderr: RedirectTarget },
+  redirects: Redirects,
   fn: () => void | Promise<void>
 ): Promise<void> {
-  const stdoutTarget = redirects.stdout;
-  const stderrTarget = redirects.stderr;
-
-  if (stdoutTarget === null && stderrTarget === null) {
+  if (redirects.stdout === null && redirects.stderr === null) {
     return Promise.resolve(fn());
   }
 
-  const outFd = stdoutTarget !== null ? openSync(stdoutTarget, "w") : undefined;
-  const errFd = stderrTarget !== null ? openSync(stderrTarget, "w") : undefined;
+  const outFd = openRedirectFd(redirects.stdout);
+  const errFd = openRedirectFd(redirects.stderr);
 
   const originalStdoutWrite = process.stdout.write.bind(process.stdout);
   const originalStderrWrite = process.stderr.write.bind(process.stderr);
@@ -53,11 +56,11 @@ async function runExternalCommand(
   resolvedPath: string,
   argv0: string,
   args: string[],
-  redirects: { stdout: RedirectTarget; stderr: RedirectTarget }
+  redirects: Redirects
 ): Promise<void> {
   await new Promise<void>((resolve) => {
-    const outFd = redirects.stdout !== null ? openSync(redirects.stdout, "w") : undefined;
-    const errFd = redirects.stderr !== null ? openSync(redirects.stderr, "w") : undefined;
+    const outFd = openRedirectFd(redirects.stdout);
+    const errFd = openRedirectFd(redirects.stderr);
 
     const child = spawn(resolvedPath, args, {
       stdio: ["inherit", outFd ?? "inherit", errFd ?? "inherit"],
