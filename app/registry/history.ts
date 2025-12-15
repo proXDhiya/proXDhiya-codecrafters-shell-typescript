@@ -31,3 +31,8 @@ export function getHistoryLines(): readonly string[] {
 export function getPersistentHistoryLines(): readonly string[] {
   return persistentHistory;
 }
+
+export function appendHistoryLines(lines: readonly string[]): void {
+  sessionHistory.push(...lines);
+  persistentHistory.push(...lines);
+}
