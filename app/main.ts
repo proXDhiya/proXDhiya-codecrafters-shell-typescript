@@ -37,7 +37,7 @@ rl.on("line", async (line: string): Promise<void> => {
   }
 
   await new Promise<void>((resolve) => {
-    const child = spawn(resolved, args, { stdio: "inherit" });
+    const child = spawn(resolved, args, { stdio: "inherit", argv0: command });
     child.on("error", () => resolve());
     child.on("exit", () => resolve());
   });
