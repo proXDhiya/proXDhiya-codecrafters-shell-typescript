@@ -1,9 +1,6 @@
-export function parseCommand(input: string): {
-  command: string;
-  args: string[];
-  stdoutRedirect?: string;
-  stderrRedirect?: string;
-} {
+import type { ParsedCommand, RedirectTarget } from "./types";
+
+export function parseCommand(input: string): ParsedCommand {
   const tokenHasQuotedOrEscapedChar: boolean[] = [];
   const tokens: string[] = [];
   let current = "";
@@ -109,8 +106,8 @@ export function parseCommand(input: string): {
 
   const command = tokens[0] ?? "";
 
-  let stdoutRedirect: string | undefined;
-  let stderrRedirect: string | undefined;
+  let stdoutRedirect: RedirectTarget = null;
+  let stderrRedirect: RedirectTarget = null;
   const args: string[] = [];
 
   for (let i = 1; i < tokens.length; i++) {
@@ -153,5 +150,12 @@ export function parseCommand(input: string): {
     args.push(tok);
   }
 
-  return { command, args, stdoutRedirect, stderrRedirect };
+  return {
+    command,
+    args,
+    redirects: {
+      stdout: stdoutRedirect,
+      stderr: stderrRedirect
+    }
+  };
 }
