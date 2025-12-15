@@ -4,7 +4,7 @@ import commands from "../registry/commands";
 
 export const typeCommand: CommandHandler = async (args: string[]): Promise<void> => {
   if (args.length === 0) {
-    console.error("type: missing argument");
+    process.stderr.write("type: missing argument\n");
     return;
   }
 

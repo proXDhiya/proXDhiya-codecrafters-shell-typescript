@@ -1,4 +1,9 @@
-export function parseCommand(input: string): { command: string; args: string[]; stdoutRedirect?: string } {
+export function parseCommand(input: string): {
+  command: string;
+  args: string[];
+  stdoutRedirect?: string;
+  stderrRedirect?: string;
+} {
   const tokenHasQuotedOrEscapedChar: boolean[] = [];
   const tokens: string[] = [];
   let current = "";
@@ -82,7 +87,7 @@ export function parseCommand(input: string): { command: string; args: string[]; 
       continue;
     }
 
-    if (ch === " " || ch === "\t") {
+    if (ch === " " || ch === "\t" || ch === "\r") {
       if (tokenStarted) {
         tokens.push(current);
         tokenHasQuotedOrEscapedChar.push(currentHasQuotedOrEscapedChar);
@@ -105,6 +110,7 @@ export function parseCommand(input: string): { command: string; args: string[]; 
   const command = tokens[0] ?? "";
 
   let stdoutRedirect: string | undefined;
+  let stderrRedirect: string | undefined;
   const args: string[] = [];
 
   for (let i = 1; i < tokens.length; i++) {
@@ -120,8 +126,22 @@ export function parseCommand(input: string): { command: string; args: string[]; 
       continue;
     }
 
+    if (!tokHasQuotedOrEscaped && tok === "2>") {
+      const file = tokens[i + 1];
+      if (file !== undefined) {
+        stderrRedirect = file;
+        i++;
+      }
+      continue;
+    }
+
     if (!tokHasQuotedOrEscaped && tok.startsWith("1>") && tok.length > 2) {
       stdoutRedirect = tok.slice(2);
+      continue;
+    }
+
+    if (!tokHasQuotedOrEscaped && tok.startsWith("2>") && tok.length > 2) {
+      stderrRedirect = tok.slice(2);
       continue;
     }
 
@@ -133,5 +153,5 @@ export function parseCommand(input: string): { command: string; args: string[]; 
     args.push(tok);
   }
 
-  return { command, args, stdoutRedirect };
+  return { command, args, stdoutRedirect, stderrRedirect };
 }

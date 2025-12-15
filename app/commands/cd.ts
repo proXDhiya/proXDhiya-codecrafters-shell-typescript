@@ -12,7 +12,7 @@ export const cdCommand: CommandHandler = (args: string[]): void => {
   if (dir === "~" || dir.startsWith("~/")) {
     const home = process.env.HOME;
     if (!home) {
-      console.error(`cd: ${dir}: No such file or directory`);
+      process.stderr.write(`cd: ${dir}: No such file or directory\n`);
       return;
     }
 
@@ -22,6 +22,6 @@ export const cdCommand: CommandHandler = (args: string[]): void => {
   try {
     process.chdir(targetDir);
   } catch {
-    console.error(`cd: ${dir}: No such file or directory`);
+    process.stderr.write(`cd: ${dir}: No such file or directory\n`);
   }
 };

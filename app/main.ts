@@ -1,4 +1,4 @@
-import { closeSync, openSync, createWriteStream } from "node:fs";
+import { closeSync, openSync, writeSync } from "node:fs";
 import { createInterface, Interface } from "node:readline";
 import { initPath, resolveCommand } from "./utils/path";
 import { parseCommand } from "./utils/parser";
@@ -16,21 +16,42 @@ initPath();
 async function runBuiltinWithRedirect(
   handler: (args: string[]) => void | Promise<void>,
   args: string[],
-  stdoutRedirect?: string
+  stdoutRedirect?: string,
+  stderrRedirect?: string
 ): Promise<void> {
-  if (!stdoutRedirect) {
-    return handler(args);
+  if (!stdoutRedirect && !stderrRedirect) {
+    await handler(args);
+    return;
   }
 
-  const out = createWriteStream(stdoutRedirect, { flags: "w" });
-  const originalWrite = (process.stdout.write as unknown) as (...writeArgs: any[]) => boolean;
-  process.stdout.write = (chunk: any, encoding?: any, cb?: any) => out.write(chunk, encoding, cb);
+  const outFd = stdoutRedirect ? openSync(stdoutRedirect, "w") : undefined;
+  const errFd = stderrRedirect ? openSync(stderrRedirect, "w") : undefined;
+  const originalStdoutWrite = process.stdout.write.bind(process.stdout);
+  const originalStderrWrite = process.stderr.write.bind(process.stderr);
+
+  if (outFd !== undefined) {
+    process.stdout.write = ((chunk: any, _encoding?: any, cb?: any) => {
+      writeSync(outFd, chunk);
+      if (typeof cb === "function") cb();
+      return true;
+    }) as any;
+  }
+
+  if (errFd !== undefined) {
+    process.stderr.write = ((chunk: any, _encoding?: any, cb?: any) => {
+      writeSync(errFd, chunk);
+      if (typeof cb === "function") cb();
+      return true;
+    }) as any;
+  }
 
   try {
-    return handler(args);
+    await handler(args);
   } finally {
-    process.stdout.write = originalWrite;
-    await new Promise<void>((resolve) => out.end(() => resolve()));
+    process.stdout.write = originalStdoutWrite as any;
+    process.stderr.write = originalStderrWrite as any;
+    if (outFd !== undefined) closeSync(outFd);
+    if (errFd !== undefined) closeSync(errFd);
   }
 }
 
@@ -38,7 +59,7 @@ rl.setPrompt("$ ");
 rl.prompt();
 
 rl.on("line", async (line: string): Promise<void> => {
-  const { command, args, stdoutRedirect } = parseCommand(line);
+  const { command, args, stdoutRedirect, stderrRedirect } = parseCommand(line);
 
   if (command.length === 0) {
     rl.prompt();
@@ -46,38 +67,42 @@ rl.on("line", async (line: string): Promise<void> => {
   }
 
   if (commands.has(command)) {
-    await runBuiltinWithRedirect(commands.get(command)!, args, stdoutRedirect);
+    await runBuiltinWithRedirect(commands.get(command)!, args, stdoutRedirect, stderrRedirect);
     rl.prompt();
     return;
   }
 
   const resolved = await resolveCommand(command);
   if (!resolved) {
-    console.error(`${command}: command not found`);
+    await runBuiltinWithRedirect(
+      () => {
+        process.stderr.write(`${command}: command not found\n`);
+      },
+      [],
+      undefined,
+      stderrRedirect
+    );
     rl.prompt();
     return;
   }
 
   await new Promise<void>((resolve) => {
-    if (!stdoutRedirect) {
-      const child = spawn(resolved, args, { stdio: "inherit", argv0: command });
-      child.on("error", () => resolve());
-      child.on("exit", () => resolve());
-      return;
-    }
+    const outFd = stdoutRedirect ? openSync(stdoutRedirect, "w") : undefined;
+    const errFd = stderrRedirect ? openSync(stderrRedirect, "w") : undefined;
 
-    const outFd = openSync(stdoutRedirect, "w");
-    const child = spawn(resolved, args, { stdio: ["inherit", outFd, "inherit"], argv0: command });
-
-    child.on("error", () => {
-      closeSync(outFd);
-      resolve();
+    const child = spawn(resolved, args, {
+      stdio: ["inherit", outFd ?? "inherit", errFd ?? "inherit"],
+      argv0: command
     });
 
-    child.on("exit", () => {
-      closeSync(outFd);
+    const finish = (): void => {
+      if (outFd !== undefined) closeSync(outFd);
+      if (errFd !== undefined) closeSync(errFd);
       resolve();
-    });
+    };
+
+    child.on("error", finish);
+    child.on("close", finish);
   });
 
   rl.prompt();
