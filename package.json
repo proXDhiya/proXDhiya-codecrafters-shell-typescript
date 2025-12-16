@@ -19,7 +19,7 @@
     "test:watch": "bun test --watch",
     "test:cov": "bun test --coverage",
     "test:ci": "bun test --coverage",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "devDependencies": {
     "@types/bun": "latest",
