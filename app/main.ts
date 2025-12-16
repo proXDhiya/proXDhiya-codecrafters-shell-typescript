@@ -1,4 +1,5 @@
 import { addHistoryLine, getPersistentHistoryLines, initHistory } from "./registry/history";
+import { createBuiltinCompleter } from "./utils/completer";
 import { createInterface, Interface } from "node:readline";
 import { initPath, resolveCommand } from "./utils/path";
 import { runParsedCommand } from "./utils/executor";
@@ -9,7 +10,8 @@ const rl: Interface = createInterface({
   input: process.stdin,
   output: process.stdout,
   terminal: true,
-  historySize: 1000
+  historySize: 1000,
+  completer: createBuiltinCompleter(commands, () => process.stdout.write("\x07"))
 });
 
 initPath();
