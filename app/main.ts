@@ -11,7 +11,14 @@ const rl: Interface = createInterface({
   output: process.stdout,
   terminal: true,
   historySize: 1000,
-  completer: createBuiltinCompleter(commands, () => process.stdout.write("\x07"))
+  completer: createBuiltinCompleter(
+    commands,
+    () => process.stdout.write("\x07"),
+    (matches: string[]) => {
+      process.stdout.write(`\n${matches.join("  ")}\n`);
+      rl.prompt();
+    }
+  )
 });
 
 initPath();
