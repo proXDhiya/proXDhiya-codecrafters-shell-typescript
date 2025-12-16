@@ -287,7 +287,7 @@ export async function runParsedLine(parsed: ParsedLine, options: RunParsedComman
             outStream.end();
           } catch {
           }
-          killUpstream(i);
+          if (isLast) killUpstream(i);
         });
       stagePromises.push(p);
       prevOutput = outStream;
@@ -325,7 +325,7 @@ export async function runParsedLine(parsed: ParsedLine, options: RunParsedComman
       .finally(() => {
         if (errFd !== undefined) closeSync(errFd);
         if (outFd !== undefined) closeSync(outFd);
-        killUpstream(i);
+        if (isLast) killUpstream(i);
       });
     stagePromises.push(p);
 
