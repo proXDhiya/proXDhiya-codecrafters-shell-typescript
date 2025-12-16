@@ -1,7 +1,7 @@
 # Shell - Build Your Own Shell
 
 [![progress-banner](https://backend.codecrafters.io/progress/shell/bc0dd1f7-a0f8-4ac0-a076-e169ed84c482)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
-[![CI](https://github.com/proXDhiya/codecrafters-shell-typescript/actions/workflows/ci.yml/badge.svg)](https://github.com/proXDhiya/codecrafters-shell-typescript/actions/workflows/ci.yml)
+[![CI](https://github.com/proXDhiya/proXDhiya-codecrafters-shell-typescript/actions/workflows/ci.yml/badge.svg)](https://github.com/proXDhiya/proXDhiya-codecrafters-shell-typescript/actions/workflows/ci.yml)
 
 A POSIX-compliant shell implementation built with **Bun** and **TypeScript** as part of the [CodeCrafters "Build Your Own Shell" Challenge](https://app.codecrafters.io/courses/shell/overview).
 
