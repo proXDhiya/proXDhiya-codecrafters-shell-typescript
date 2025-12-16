@@ -68,3 +68,9 @@ export function appendHistoryLines(lines: readonly string[]): void {
   sessionHistory.push(...lines);
   persistentHistory.push(...lines);
 }
+
+export function clearHistory(): void {
+  sessionHistory.length = 0;
+  persistentHistory.length = 0;
+  initialSessionHistoryLength = 0;
+}

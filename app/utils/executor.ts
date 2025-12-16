@@ -4,7 +4,7 @@ import { PassThrough, Writable } from "node:stream";
 
 import type { CommandHandler, ParsedCommand, ParsedLine, Redirect, Redirects } from "./types";
 
-type RunParsedCommandOptions = {
+export type RunParsedCommandOptions = {
   builtins: Map<string, CommandHandler>;
   resolveExternal: (command: string) => Promise<string | null>;
 };
@@ -131,8 +131,10 @@ async function runExternalPipeline(
   });
 
   left.stdout!.on("error", () => {
+    // Ignore pipe errors when right process closes early
   });
   right.stdin!.on("error", () => {
+    // Ignore pipe errors when left process closes early
   });
 
   left.stdout!.pipe(right.stdin!);
@@ -141,6 +143,7 @@ async function runExternalPipeline(
     try {
       left.kill();
     } catch {
+      // Process may already be dead
     }
   });
 
@@ -252,6 +255,7 @@ export async function runParsedLine(parsed: ParsedLine, options: RunParsedComman
       try {
         child.kill();
       } catch {
+        // Process may already be dead
       }
     }
   };
@@ -286,8 +290,8 @@ export async function runParsedLine(parsed: ParsedLine, options: RunParsedComman
           try {
             outStream.end();
           } catch {
+            // Stream may already be closed
           }
-          if (isLast) killUpstream(i);
         });
       stagePromises.push(p);
       prevOutput = outStream;
@@ -315,8 +319,10 @@ export async function runParsedLine(parsed: ParsedLine, options: RunParsedComman
 
     if (prevOutput) {
       child.stdin!.on("error", () => {
+        // Ignore pipe errors when upstream closes
       });
       prevOutput.on("error", () => {
+        // Ignore pipe errors when downstream closes
       });
       prevOutput.pipe(child.stdin!);
     }
