@@ -1,4 +1,5 @@
-import { readdirSync } from "node:fs";
+import { accessSync, constants, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 
 import type { CommandHandler } from "./types";
 
@@ -14,8 +15,14 @@ function findMatches(input: string, builtins: Map<string, CommandHandler>): stri
     try {
       const files = readdirSync(dir);
       for (const file of files) {
-        if (file.startsWith(input) && file.includes('.')) {
+        if (!file.startsWith(input)) continue;
+
+        const fullPath = join(dir, file);
+        try {
+          if (!statSync(fullPath).isFile()) continue;
+          accessSync(fullPath, constants.X_OK);
           executableMatches.add(file);
+        } catch {
         }
       }
     } catch {
