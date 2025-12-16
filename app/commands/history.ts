@@ -1,3 +1,19 @@
+/**
+  * app/commands/history.ts
+  *
+  * Implements the `history` builtin command.
+  *
+  * Objective:
+  * - Provide a user-facing interface for viewing and persisting command history.
+  * - Demonstrate how builtins can interact with shared shell state (the history registry).
+  *
+  * Supported behaviors:
+  * - `history` (no args): print history (optionally limited by a numeric argument)
+  * - `history N`: print the last N entries
+  * - `history -w <file>`: write current history to a file
+  * - `history -r <file>`: read history lines from a file and append them to the session
+  * - `history -a <file>`: append only new lines since the last `-a` to a file
+  */
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 
 import { appendHistoryLines, getHistoryLines } from "../registry/history";

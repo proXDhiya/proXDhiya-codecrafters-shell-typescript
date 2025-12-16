@@ -1,3 +1,15 @@
+/**
+  * tests/commands/pwd.test.ts
+  *
+  * Tests for the `pwd` builtin.
+  *
+  * Objective:
+  * - Ensure `pwd` prints the process working directory.
+  * - Demonstrate that changing the process directory changes `pwd` output.
+  *
+  * Notes for learners:
+  * - Builtins are tested by intercepting `process.stdout.write`.
+  */
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 import { pwdCommand } from "../../app/commands/pwd";
 

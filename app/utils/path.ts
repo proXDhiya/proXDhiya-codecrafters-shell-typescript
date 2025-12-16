@@ -1,3 +1,22 @@
+/**
+ * app/utils/path.ts
+ *
+ * External command resolution for the shell.
+ *
+ * Objective:
+ * - Maintain an in-memory view of the current `PATH` (split into directories).
+ * - Resolve a command name like `ls` into an absolute executable path by searching
+ *   through those directories.
+ * - Cache results so repeated lookups are fast.
+ *
+ * Key behaviors:
+ * - `initPath()` reads `process.env.PATH` at startup and populates the registry.
+ * - `resolveCommand(cmd)`:
+ *   - If `cmd` contains `/`, treat it as a path and only check executability.
+ *   - Otherwise, search each directory in PATH in order and return the first executable.
+ * - `setPathFromString()` / `prependPathDir()` are utilities used by tests and can
+ *   also be used by future features that modify PATH within the shell.
+ */
 import { pathDirs, resolveCache } from "../registry/path";
 import { resolve as resolvePath } from "node:path";
 import { access } from "node:fs/promises";

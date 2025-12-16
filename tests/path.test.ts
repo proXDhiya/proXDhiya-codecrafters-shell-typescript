@@ -1,3 +1,16 @@
+/**
+  * tests/path.test.ts
+  *
+  * Test suite for external command resolution (`app/utils/path.ts`).
+  *
+  * Objective:
+  * - Verify how the shell interprets `PATH`.
+  * - Ensure executability checks and search order behave like a typical shell.
+  * - Validate caching behavior (repeat lookups are fast and consistent).
+  *
+  * Notes for learners:
+  * - These tests create temporary executable files to simulate commands on disk.
+  */
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 import { resolveCommand, setPathFromString, getPathDirs, initPath, prependPathDir } from "../app/utils/path";
 import { mkdirSync, rmSync, writeFileSync, chmodSync } from "node:fs";

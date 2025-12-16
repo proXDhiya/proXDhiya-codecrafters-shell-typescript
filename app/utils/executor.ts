@@ -1,3 +1,24 @@
+/**
+  * app/utils/executor.ts
+  *
+  * Execution engine for the shell.
+  *
+  * Objective:
+  * - Take parsed commands (`ParsedLine` / `ParsedCommand`) and perform the actual work:
+  *   - Run builtins inside the current process.
+  *   - Spawn external processes for non-builtin commands.
+  *   - Wire up pipelines between multiple processes/commands.
+  *   - Apply stdout/stderr redirection semantics.
+  *
+  * Design notes for learners:
+  * - The executor is intentionally separated from parsing so each concern is testable.
+  * - Builtins are executed via `CommandHandler` functions.
+  * - External commands are resolved via a callback (`resolveExternal`) so this module
+  *   does not depend on PATH details directly.
+  * - Pipelines are handled in two ways:
+  *   - Optimized path when both sides are external commands.
+  *   - Generic multi-stage pipeline handler that can include builtins.
+  */
 import { spawn } from "node:child_process";
 import { closeSync, openSync, writeSync } from "node:fs";
 import { PassThrough, Writable } from "node:stream";

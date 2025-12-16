@@ -1,3 +1,22 @@
+/**
+  * app/utils/completer.ts
+  *
+  * Tab-completion logic for the interactive REPL.
+  *
+  * Objective:
+  * - Provide an experience similar to common shells when the user presses `<TAB>`.
+  * - Complete builtin command names and external command names (executables in `$PATH`).
+  *
+  * Behavior implemented here:
+  * - If there's exactly one match: complete it (and add a trailing space).
+  * - If there are multiple matches:
+  *   - On first TAB: ring a bell and extend to the longest common prefix (if possible).
+  *   - On second TAB with same input: print all matches.
+  *
+  * Notes for learners:
+  * - This module intentionally does a simple filesystem scan of `$PATH` directories.
+  *   The main executor uses `utils/path.ts` for resolution + caching.
+  */
 import { accessSync, constants, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 

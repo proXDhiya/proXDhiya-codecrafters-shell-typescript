@@ -1,3 +1,24 @@
+/**
+  * app/utils/parser.ts
+  *
+  * Parsing layer for the shell.
+  *
+  * Objective:
+  * - Convert a raw user input line (string) into structured data that the executor can run.
+  * - Keep parsing deterministic and side-effect free (pure transformations).
+  *
+  * What this parser understands:
+  * - **Tokenization**: split by whitespace, while respecting quotes and backslash escapes.
+  * - **Quoting**:
+  *   - Single quotes `'...'` keep everything literal.
+  *   - Double quotes `"..."` allow escaping of `"` and `\\`.
+  * - **Pipelines**: split a line into multiple commands on unquoted `|`.
+  * - **Redirections**: detect stdout/stderr redirects (`>`, `>>`, `1>`, `1>>`, `2>`, `2>>`, plus no-space forms).
+  *
+  * Output types:
+  * - `ParsedCommand`: command name + args + redirect info
+  * - `ParsedLine`: either a single command or a pipeline of commands
+  */
 import type { ParsedCommand, ParsedLine, Redirect } from "./types";
 
 function findFirstUnquotedPipe(input: string): number {

@@ -1,3 +1,19 @@
+/**
+  * app/commands/type.ts
+  *
+  * Implements the `type` builtin command.
+  *
+  * Objective:
+  * - Teach how a shell decides what will run when you type a command name.
+  * - Report whether a given name resolves to:
+  *   - a shell builtin, or
+  *   - an external executable found via `$PATH`, or
+  *   - nothing (not found).
+  *
+  * Implementation notes:
+  * - Builtins are looked up in the shared command registry.
+  * - External commands are resolved via `utils/path.ts` (executable checks + PATH search).
+  */
 import type { CommandHandler } from "../utils/types";
 import { resolveCommand } from "../utils/path";
 import commands from "../registry/commands";

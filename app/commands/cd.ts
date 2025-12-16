@@ -1,3 +1,16 @@
+/**
+ * app/commands/cd.ts
+ *
+ * Implements the `cd` builtin command.
+ *
+ * Objective:
+ * - Change the shell process' current working directory.
+ * - Provide minimal `~` expansion (`~` and `~/...`) using `$HOME`.
+ *
+ * Notes for learners:
+ * - `cd` must be a builtin because it needs to affect the current process.
+ *   If it were an external process, directory changes would not persist.
+ */
 import type { CommandHandler } from "../utils/types";
 import { join } from "node:path";
 

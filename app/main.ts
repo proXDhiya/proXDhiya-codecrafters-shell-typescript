@@ -1,3 +1,21 @@
+/**
+  * app/main.ts
+  *
+  * Entry point for the shell executable.
+  *
+  * Responsibilities:
+  * - Creates the interactive REPL using Node's `readline`.
+  * - Initializes global registries (PATH + history).
+  * - Reads user input, parses it into an AST-like structure (`ParsedLine`),
+  *   executes it (builtins, externals, pipelines, redirects), then re-prompts.
+  *
+  * Data flow (high level):
+  * `readline` line -> `parseLine()` -> `runParsedLine()` -> output/side effects.
+  *
+  * Notes for learners:
+  * - This file purposefully keeps orchestration logic only; the real shell
+  *   semantics live in `utils/parser.ts`, `utils/executor.ts`, and `utils/path.ts`.
+  */
 import { addHistoryLine, getPersistentHistoryLines, initHistory } from "./registry/history";
 import { createBuiltinCompleter } from "./utils/completer";
 import { createInterface, Interface } from "node:readline";

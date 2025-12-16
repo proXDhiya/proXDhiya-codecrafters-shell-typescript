@@ -1,3 +1,20 @@
+/**
+  * tests/commands/history.test.ts
+  *
+  * Tests for the `history` builtin.
+  *
+  * Objective:
+  * - Verify printing behavior (all entries vs last N).
+  * - Verify persistence-oriented flags:
+  *   - `-w` writes history to a file
+  *   - `-r` reads and appends history from a file
+  *   - `-a` appends only the new lines since last append
+  * - Validate error handling for missing paths and missing files.
+  *
+  * Notes for learners:
+  * - This suite demonstrates how a builtin can be tested by capturing stdout/stderr
+  *   and manipulating the history registry as test setup.
+  */
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 import { historyCommand } from "../../app/commands/history";
 import { addHistoryLine, clearHistory, getHistoryLines } from "../../app/registry/history";
@@ -9,7 +26,7 @@ describe("historyCommand", () => {
   let stderrOutput: string;
   let originalStdoutWrite: typeof process.stdout.write;
   let originalStderrWrite: typeof process.stderr.write;
-  let testDir: string;
+   let testDir: string;
 
   beforeEach(() => {
     stdoutOutput = "";

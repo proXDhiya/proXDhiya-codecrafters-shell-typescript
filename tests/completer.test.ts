@@ -1,3 +1,15 @@
+/**
+ * tests/completer.test.ts
+ *
+ * Test suite for tab completion (`app/utils/completer.ts`).
+ *
+ * Objective:
+  * - Validate completion behavior for builtin commands and external commands.
+  * - Ensure the user experience matches the intended rules:
+  *   - single match completes
+  *   - multiple matches ring bell and/or print matches on a second TAB
+  *   - longest common prefix behavior
+    */
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 import { createBuiltinCompleter } from "../app/utils/completer";
 import type { CommandHandler } from "../app/utils/types";

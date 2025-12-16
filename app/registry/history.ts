@@ -1,3 +1,24 @@
+/**
+  * app/registry/history.ts
+  *
+  * History storage + persistence for the shell.
+  *
+  * Objective:
+  * - Maintain an in-memory list of commands entered in the current session.
+  * - Optionally persist history to a file, compatible with a simple shell workflow.
+  *
+  * Persistence rules implemented here:
+  * - If `$HISTFILE` is set:
+  *   - We load existing lines from that file.
+  *   - We delay writing and flush new lines on process exit.
+  * - If `$HISTFILE` is not set:
+  *   - We default to `./.shell_history`.
+  *   - We append each new command immediately.
+  *
+  * Notes for learners:
+  * - This module acts as a small state container ("registry").
+  * - The builtin `history` command provides the user interface on top of this.
+  */
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { isAbsolute, resolve } from "node:path";
 

@@ -1,3 +1,17 @@
+/**
+  * tests/commands/type.test.ts
+  *
+  * Tests for the `type` builtin.
+  *
+  * Objective:
+  * - Verify that `type` correctly reports builtins vs external executables vs not found.
+  * - Demonstrate how the builtin interacts with:
+  *   - the builtin command registry (for builtin detection)
+  *   - PATH initialization (for external lookup)
+  *
+  * Notes for learners:
+  * - This suite imports the builtin registration module so the registry is populated.
+  */
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 import { typeCommand } from "../../app/commands/type";
 import "../../app/commands/index";

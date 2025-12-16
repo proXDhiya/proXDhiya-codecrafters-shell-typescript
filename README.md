@@ -42,11 +42,39 @@ bun run dev
 Download the latest Linux binary from [Releases](https://github.com/proXDhiya/codecrafters-shell-typescript/releases).
 
 ```bash
+REPO="proXDhiya/codecrafters-shell-typescript"
+ASSET="shell-linux-x64"
+
+# Download the latest release asset
+curl -L -o "$ASSET" "https://github.com/$REPO/releases/latest/download/$ASSET"
+
 # Make it executable
-chmod +x shell-linux-x64
+chmod +x "$ASSET"
 
 # Run
-./shell-linux-x64
+./"$ASSET"
+```
+
+### Try It
+
+Once the shell is running, try a few commands:
+
+```sh
+pwd
+echo hello
+type echo
+type ls
+ls
+```
+
+### PATH demo (optional)
+
+External commands are resolved using the `PATH` environment variable from the process that launches this shell.
+
+You can temporarily override `PATH` when starting the shell like this:
+
+```bash
+PATH="/usr/bin:/usr/local/bin:$PATH" ./your_program.sh
 ```
 
 ## Architecture
@@ -81,15 +109,15 @@ app/
 The shell runs a Read-Eval-Print Loop using Node's `readline` module:
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Prompt    │ ──▶ │   Read      │ ──▶ │   Parse     │ ──▶ │   Execute   │
-│   "$ "      │     │   Input     │     │   Command   │     │   Command   │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-                                                                   │
-                                                                   ▼
-                                                            ┌─────────────┐
-                                                            │   Output    │
-                                                            └─────────────┘
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│   Prompt    │ ───▶ │   Read      │ ───▶ │   Parse     │ ───▶ │   Execute   │
+│   "$ "      │      │   Input     │      │   Command   │      │   Command   │
+└─────────────┘      └─────────────┘      └─────────────┘      └─────────────┘
+                                                                      │
+                                                                      ▼
+                                                               ┌─────────────┐
+                                                               │   Output    │
+                                                               └─────────────┘
 ```
 
 ### 2. Parsing (`parser.ts`)
@@ -115,10 +143,10 @@ The executor handles three cases:
 3. **Multi-Command Pipeline**: Generic handler supporting builtins anywhere in the pipeline
 
 ```
-┌──────────┐     ┌──────────┐     ┌──────────┐
-│   cat    │ ──▶ │   head   │ ──▶ │   wc     │
-│  stdout  │pipe │  stdout  │pipe │  stdout  │
-└──────────┘     └──────────┘     └──────────┘
+┌──────────┐      ┌──────────┐      ┌──────────┐
+│   cat    │ ───▶ │   head   │ ───▶ │   wc     │
+│  stdout  │ pipe │  stdout  │ pipe │  stdout  │
+└──────────┘      └──────────┘      └──────────┘
 ```
 
 ### 4. Tab Completion (`completer.ts`)

@@ -1,3 +1,17 @@
+/**
+ * tests/parser.test.ts
+ *
+ * Test suite for the parsing layer (`app/utils/parser.ts`).
+ *
+ * Objective:
+ * - Validate that raw user input is tokenized and structured correctly.
+ * - Ensure shell-like behaviors are preserved:
+ *   - whitespace splitting
+ *   - single/double quotes
+ *   - backslash escaping
+ *
+ * These tests function as executable documentation for the supported grammar.
+ */
 import { describe, expect, test } from "bun:test";
 import { parseCommand, parseLine } from "../app/utils/parser";
 

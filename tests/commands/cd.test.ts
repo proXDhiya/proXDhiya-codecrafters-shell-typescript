@@ -1,3 +1,15 @@
+/**
+ * tests/commands/cd.test.ts
+ *
+ * Tests for the `cd` builtin.
+ *
+ * Objective:
+ * - Ensure directory changes update the shell process working directory.
+ * - Validate `~` expansion behavior and error output for invalid paths.
+ *
+ * @description This test suite covers the functionality of the `cd` builtin.
+ * It checks for correct directory changes, `~` expansion, and error handling.
+ */
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 import { cdCommand } from "../../app/commands/cd";
 import { mkdirSync, rmSync } from "node:fs";
