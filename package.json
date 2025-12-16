@@ -2,6 +2,7 @@
   "name": "@codecrafters/shell",
   "version": "0.1.0",
   "description": "Build your own Shell challenge, from CodeCrafters",
+  "license": "MIT",
   "module": "app/main.ts",
   "type": "module",
   "private": true,
