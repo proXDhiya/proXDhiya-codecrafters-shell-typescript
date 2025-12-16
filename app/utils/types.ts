@@ -18,3 +18,7 @@ export type ParsedCommand = {
   args: string[];
   redirects: Redirects;
 };
+
+export type ParsedLine =
+  | { kind: "command"; command: ParsedCommand }
+  | { kind: "pipeline"; left: ParsedCommand; right: ParsedCommand };

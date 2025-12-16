@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { closeSync, openSync, writeSync } from "node:fs";
 
-import type { CommandHandler, ParsedCommand, Redirect, Redirects } from "./types";
+import type { CommandHandler, ParsedCommand, ParsedLine, Redirect, Redirects } from "./types";
 
 type RunParsedCommandOptions = {
   builtins: Map<string, CommandHandler>;
@@ -52,6 +52,59 @@ function withRedirects(
   });
 }
 
+function waitForChild(child: ReturnType<typeof spawn>): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const finish = (): void => resolve();
+    child.on("error", finish);
+    child.on("close", finish);
+  });
+}
+
+async function runExternalPipeline(
+  leftResolvedPath: string,
+  leftArgv0: string,
+  leftArgs: string[],
+  leftRedirects: Redirects,
+  rightResolvedPath: string,
+  rightArgv0: string,
+  rightArgs: string[],
+  rightRedirects: Redirects
+): Promise<void> {
+  const leftErrFd = openRedirectFd(leftRedirects.stderr);
+  const rightOutFd = openRedirectFd(rightRedirects.stdout);
+  const rightErrFd = openRedirectFd(rightRedirects.stderr);
+
+  const left = spawn(leftResolvedPath, leftArgs, {
+    stdio: ["inherit", "pipe", leftErrFd ?? "inherit"],
+    argv0: leftArgv0
+  });
+
+  const right = spawn(rightResolvedPath, rightArgs, {
+    stdio: ["pipe", rightOutFd ?? "inherit", rightErrFd ?? "inherit"],
+    argv0: rightArgv0
+  });
+
+  left.stdout!.on("error", () => {
+  });
+  right.stdin!.on("error", () => {
+  });
+
+  left.stdout!.pipe(right.stdin!);
+
+  right.on("close", () => {
+    try {
+      left.kill();
+    } catch {
+    }
+  });
+
+  await Promise.all([waitForChild(left), waitForChild(right)]).finally(() => {
+    if (leftErrFd !== undefined) closeSync(leftErrFd);
+    if (rightOutFd !== undefined) closeSync(rightOutFd);
+    if (rightErrFd !== undefined) closeSync(rightErrFd);
+  });
+}
+
 async function runExternalCommand(
   resolvedPath: string,
   argv0: string,
@@ -94,4 +147,41 @@ export async function runParsedCommand(parsed: ParsedCommand, options: RunParsed
   }
 
   await runExternalCommand(resolved, parsed.command, parsed.args, parsed.redirects);
+}
+
+export async function runParsedLine(parsed: ParsedLine, options: RunParsedCommandOptions): Promise<void> {
+  if (parsed.kind === "command") {
+    await runParsedCommand(parsed.command, options);
+    return;
+  }
+
+  const left = parsed.left;
+  const right = parsed.right;
+
+  const leftResolved = await options.resolveExternal(left.command);
+  if (leftResolved === null) {
+    await withRedirects({ stdout: null, stderr: left.redirects.stderr }, () => {
+      process.stderr.write(`${left.command}: command not found\n`);
+    });
+    return;
+  }
+
+  const rightResolved = await options.resolveExternal(right.command);
+  if (rightResolved === null) {
+    await withRedirects({ stdout: null, stderr: right.redirects.stderr }, () => {
+      process.stderr.write(`${right.command}: command not found\n`);
+    });
+    return;
+  }
+
+  await runExternalPipeline(
+    leftResolved,
+    left.command,
+    left.args,
+    left.redirects,
+    rightResolved,
+    right.command,
+    right.args,
+    right.redirects
+  );
 }

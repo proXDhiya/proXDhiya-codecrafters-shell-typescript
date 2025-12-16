@@ -1,4 +1,72 @@
-import type { ParsedCommand, Redirect } from "./types";
+import type { ParsedCommand, ParsedLine, Redirect } from "./types";
+
+function findFirstUnquotedPipe(input: string): number {
+  let inSingleQuote = false;
+  let inDoubleQuote = false;
+
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+
+    if (inSingleQuote) {
+      if (ch === "'") inSingleQuote = false;
+      continue;
+    }
+
+    if (inDoubleQuote) {
+      if (ch === "\\") {
+        if (i + 1 < input.length) {
+          const next = input[i + 1];
+          if (next === "\\" || next === '"') {
+            i++;
+          }
+        }
+        continue;
+      }
+
+      if (ch === '"') {
+        inDoubleQuote = false;
+      }
+      continue;
+    }
+
+    if (ch === "\\") {
+      if (i + 1 < input.length) i++;
+      continue;
+    }
+
+    if (ch === "'") {
+      inSingleQuote = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      inDoubleQuote = true;
+      continue;
+    }
+
+    if (ch === "|") return i;
+  }
+
+  return -1;
+}
+
+export function parseLine(input: string): ParsedLine {
+  const pipeIndex = findFirstUnquotedPipe(input);
+  if (pipeIndex === -1) {
+    return { kind: "command", command: parseCommand(input) };
+  }
+
+  const leftInput = input.slice(0, pipeIndex).trimEnd();
+  const rightInput = input.slice(pipeIndex + 1).trimStart();
+  const left = parseCommand(leftInput);
+  const right = parseCommand(rightInput);
+
+  if (left.command.length === 0 || right.command.length === 0) {
+    return { kind: "command", command: parseCommand(input) };
+  }
+
+  return { kind: "pipeline", left, right };
+}
 
 export function parseCommand(input: string): ParsedCommand {
   const tokenHasQuotedOrEscapedChar: boolean[] = [];

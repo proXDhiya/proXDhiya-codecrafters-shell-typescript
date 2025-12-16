@@ -2,8 +2,8 @@ import { addHistoryLine, getPersistentHistoryLines, initHistory } from "./regist
 import { createBuiltinCompleter } from "./utils/completer";
 import { createInterface, Interface } from "node:readline";
 import { initPath, resolveCommand } from "./utils/path";
-import { runParsedCommand } from "./utils/executor";
-import { parseCommand } from "./utils/parser";
+import { runParsedLine } from "./utils/executor";
+import { parseLine } from "./utils/parser";
 import commands from "./commands/index";
 
 const rl: Interface = createInterface({
@@ -32,16 +32,16 @@ rl.prompt();
 
 rl.on("line", async (line: string): Promise<void> => {
   const normalizedLine = line.endsWith("\r") ? line.slice(0, -1) : line;
-  const parsed = parseCommand(normalizedLine);
+  const parsed = parseLine(normalizedLine);
 
-  if (parsed.command.length === 0) {
+  if (parsed.kind === "command" && parsed.command.command.length === 0) {
     rl.prompt();
     return;
   }
 
   addHistoryLine(normalizedLine);
 
-  await runParsedCommand(parsed, {
+  await runParsedLine(parsed, {
     builtins: commands,
     resolveExternal: resolveCommand
   });
