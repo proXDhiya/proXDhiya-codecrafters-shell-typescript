@@ -207,6 +207,43 @@ export async function runParsedLine(parsed: ParsedLine, options: RunParsedComman
     return;
   }
 
+  if (
+    commands.length === 2 &&
+    !options.builtins.has(commands[0]!.command) &&
+    !options.builtins.has(commands[1]!.command)
+  ) {
+    const left = commands[0]!;
+    const right = commands[1]!;
+
+    const leftResolved = await options.resolveExternal(left.command);
+    if (leftResolved === null) {
+      await withRedirects({ stdout: null, stderr: left.redirects.stderr }, () => {
+        process.stderr.write(`${left.command}: command not found\n`);
+      });
+      return;
+    }
+
+    const rightResolved = await options.resolveExternal(right.command);
+    if (rightResolved === null) {
+      await withRedirects({ stdout: null, stderr: right.redirects.stderr }, () => {
+        process.stderr.write(`${right.command}: command not found\n`);
+      });
+      return;
+    }
+
+    await runExternalPipeline(
+      leftResolved,
+      left.command,
+      left.args,
+      left.redirects,
+      rightResolved,
+      right.command,
+      right.args,
+      right.redirects
+    );
+    return;
+  }
+
   const stageChildren: Array<ReturnType<typeof spawn> | null> = new Array(commands.length).fill(null);
   const killUpstream = (stageIndex: number): void => {
     for (let i = 0; i < stageIndex; i++) {
