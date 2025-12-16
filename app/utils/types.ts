@@ -21,4 +21,4 @@ export type ParsedCommand = {
 
 export type ParsedLine =
   | { kind: "command"; command: ParsedCommand }
-  | { kind: "pipeline"; left: ParsedCommand; right: ParsedCommand };
+  | { kind: "pipeline"; commands: ParsedCommand[] };

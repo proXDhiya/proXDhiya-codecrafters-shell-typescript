@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { closeSync, openSync, writeSync } from "node:fs";
+import { PassThrough, Writable } from "node:stream";
 
 import type { CommandHandler, ParsedCommand, ParsedLine, Redirect, Redirects } from "./types";
 
@@ -57,6 +58,51 @@ function waitForChild(child: ReturnType<typeof spawn>): Promise<void> {
     const finish = (): void => resolve();
     child.on("error", finish);
     child.on("close", finish);
+  });
+}
+
+function createDevNullWritable(): Writable {
+  return new Writable({
+    write(_chunk, _encoding, cb) {
+      cb();
+    }
+  });
+}
+
+function drainReadable(readable: NodeJS.ReadableStream): Promise<void> {
+  return new Promise<void>((resolve) => {
+    readable.on("error", () => resolve());
+    readable.on("end", () => resolve());
+    readable.on("close", () => resolve());
+    readable.resume();
+  });
+}
+
+function withPatchedStdoutStderr(
+  stdout: NodeJS.WritableStream,
+  stderrRedirect: Redirect,
+  fn: () => void | Promise<void>
+): Promise<void> {
+  const errFd = openRedirectFd(stderrRedirect);
+  const originalStdoutWrite = process.stdout.write.bind(process.stdout);
+  const originalStderrWrite = process.stderr.write.bind(process.stderr);
+
+  process.stdout.write = ((chunk: any, encoding?: any, cb?: any) => {
+    return stdout.write(chunk, encoding, cb);
+  }) as any;
+
+  if (errFd !== undefined) {
+    process.stderr.write = ((chunk: any, _encoding?: any, cb?: any) => {
+      writeSync(errFd, chunk);
+      if (typeof cb === "function") cb();
+      return true;
+    }) as any;
+  }
+
+  return Promise.resolve(fn()).finally(() => {
+    process.stdout.write = originalStdoutWrite as any;
+    process.stderr.write = originalStderrWrite as any;
+    if (errFd !== undefined) closeSync(errFd);
   });
 }
 
@@ -155,33 +201,99 @@ export async function runParsedLine(parsed: ParsedLine, options: RunParsedComman
     return;
   }
 
-  const left = parsed.left;
-  const right = parsed.right;
-
-  const leftResolved = await options.resolveExternal(left.command);
-  if (leftResolved === null) {
-    await withRedirects({ stdout: null, stderr: left.redirects.stderr }, () => {
-      process.stderr.write(`${left.command}: command not found\n`);
-    });
+  const commands = parsed.commands;
+  if (commands.length === 1) {
+    await runParsedCommand(commands[0]!, options);
     return;
   }
 
-  const rightResolved = await options.resolveExternal(right.command);
-  if (rightResolved === null) {
-    await withRedirects({ stdout: null, stderr: right.redirects.stderr }, () => {
-      process.stderr.write(`${right.command}: command not found\n`);
+  const stageChildren: Array<ReturnType<typeof spawn> | null> = new Array(commands.length).fill(null);
+  const killUpstream = (stageIndex: number): void => {
+    for (let i = 0; i < stageIndex; i++) {
+      const child = stageChildren[i];
+      if (!child) continue;
+      try {
+        child.kill();
+      } catch {
+      }
+    }
+  };
+
+  let prevOutput: NodeJS.ReadableStream | null = null;
+  const stagePromises: Promise<void>[] = [];
+
+  for (let i = 0; i < commands.length; i++) {
+    const cmd = commands[i]!;
+    const isLast = i === commands.length - 1;
+    const builtin = options.builtins.get(cmd.command);
+
+    if (builtin) {
+      if (prevOutput) {
+        const devNull = createDevNullWritable();
+        prevOutput.pipe(devNull);
+        stagePromises.push(drainReadable(prevOutput));
+      }
+
+      if (isLast) {
+        const p = withRedirects(cmd.redirects, () => builtin(cmd.args)).finally(() => {
+          killUpstream(i);
+        });
+        stagePromises.push(p);
+        prevOutput = null;
+        continue;
+      }
+
+      const outStream = new PassThrough();
+      const p = withPatchedStdoutStderr(outStream, cmd.redirects.stderr, () => builtin(cmd.args))
+        .finally(() => {
+          try {
+            outStream.end();
+          } catch {
+          }
+          killUpstream(i);
+        });
+      stagePromises.push(p);
+      prevOutput = outStream;
+      continue;
+    }
+
+    const resolved = await options.resolveExternal(cmd.command);
+    if (resolved === null) {
+      await withRedirects({ stdout: null, stderr: cmd.redirects.stderr }, () => {
+        process.stderr.write(`${cmd.command}: command not found\n`);
+      });
+      killUpstream(i);
+      return;
+    }
+
+    const errFd = openRedirectFd(cmd.redirects.stderr);
+    const outFd = isLast ? openRedirectFd(cmd.redirects.stdout) : undefined;
+
+    const child: ReturnType<typeof spawn> = spawn(resolved, cmd.args, {
+      stdio: [prevOutput ? "pipe" : "inherit", isLast ? (outFd ?? "inherit") : "pipe", errFd ?? "inherit"],
+      argv0: cmd.command
     });
-    return;
+
+    stageChildren[i] = child;
+
+    if (prevOutput) {
+      child.stdin!.on("error", () => {
+      });
+      prevOutput.on("error", () => {
+      });
+      prevOutput.pipe(child.stdin!);
+    }
+
+    const p = waitForChild(child)
+      .finally(() => {
+        if (errFd !== undefined) closeSync(errFd);
+        if (outFd !== undefined) closeSync(outFd);
+        killUpstream(i);
+      });
+    stagePromises.push(p);
+
+    prevOutput = isLast ? null : child.stdout!;
   }
 
-  await runExternalPipeline(
-    leftResolved,
-    left.command,
-    left.args,
-    left.redirects,
-    rightResolved,
-    right.command,
-    right.args,
-    right.redirects
-  );
+  await Promise.all(stagePromises);
 }

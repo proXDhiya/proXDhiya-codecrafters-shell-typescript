@@ -50,22 +50,34 @@ function findFirstUnquotedPipe(input: string): number {
   return -1;
 }
 
+function splitByUnquotedPipe(input: string): string[] {
+  const parts: string[] = [];
+  let rest = input;
+
+  while (true) {
+    const idx = findFirstUnquotedPipe(rest);
+    if (idx === -1) {
+      parts.push(rest);
+      return parts;
+    }
+    parts.push(rest.slice(0, idx));
+    rest = rest.slice(idx + 1);
+  }
+}
+
 export function parseLine(input: string): ParsedLine {
-  const pipeIndex = findFirstUnquotedPipe(input);
-  if (pipeIndex === -1) {
+  const rawParts = splitByUnquotedPipe(input);
+  if (rawParts.length === 1) {
     return { kind: "command", command: parseCommand(input) };
   }
 
-  const leftInput = input.slice(0, pipeIndex).trimEnd();
-  const rightInput = input.slice(pipeIndex + 1).trimStart();
-  const left = parseCommand(leftInput);
-  const right = parseCommand(rightInput);
+  const commands = rawParts.map((p, i) => (i === 0 ? p.trimEnd() : p.trimStart())).map(parseCommand);
 
-  if (left.command.length === 0 || right.command.length === 0) {
+  if (commands.some((c) => c.command.length === 0)) {
     return { kind: "command", command: parseCommand(input) };
   }
 
-  return { kind: "pipeline", left, right };
+  return { kind: "pipeline", commands };
 }
 
 export function parseCommand(input: string): ParsedCommand {
